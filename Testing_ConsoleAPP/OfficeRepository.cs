@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Testing_ConsoleAPP.DTOs;
@@ -12,18 +13,13 @@ namespace Testing_ConsoleAPP
     {
         string connectionString = "Server=DESKTOP-MOEUPLV\\SQLEXPRESS;Database=myDataBase;Trusted_Connection=True;";
 
-       
-    
-
         public bool DeleteEmployee(int FId)
         {
-            List< OfficeTableModel> officeTableModels= new List< OfficeTableModel>();
+            List<OfficeTableModel> officeTableModels = new List<OfficeTableModel>();
 
-            
             // SQL query to delete data
             string deleteQuery = "DELETE FROM office_table WHERE F_Id = @FId";
 
-            
             // Create connection
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -70,7 +66,7 @@ namespace Testing_ConsoleAPP
             List<OfficeTableModel> employees = new List<OfficeTableModel>();
             // SQL query to execute
             string query = "select * from office_table";
-           
+
 
             // Create connection
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -127,15 +123,11 @@ namespace Testing_ConsoleAPP
             return employees;
         }
 
-       
-
-       public bool CreateEmployee(CreateEmployeeDto createEmployeeDto)
+        public bool CreateEmployee(CreateEmployeeDto createEmployeeDto)
         {
-            
-            
             string insertQuery = "INSERT INTO office_table (F_Id, Name,Department) VALUES (@FId, @Name,@Department)";
             string result = "0";
-            
+
             // Create connection
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -181,112 +173,62 @@ namespace Testing_ConsoleAPP
 
             return true;
         }
-    
 
         public bool UpdateEmployee(UpdateEmployeeDto updateEmployeeDto)
         {
-            
+
             // Create connection
-            if(updateEmployeeDto.Name==null||updateEmployeeDto.Name.Length==0)
+            bool anything = false;
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string updateQuery = "UPDATE office_table SET Department=@Department WHERE F_Id =@FId;";
+                // string updateQuery = "UPDATE office_table SET Name=@Name,Department=@Department WHERE F_Id =@FId;";
+                string updateQuery = "UPDATE office_table SET [Name] = IsNull(@Name,[Name]),Department=IsNull(@Department,Department) WHERE F_Id = @FId;";
                 string result = "0";
+                
+                SqlCommand command = new SqlCommand(updateQuery, connection);
 
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                // Add parameters
+                command.Parameters.AddWithValue("@FId", updateEmployeeDto.FId);
+                //command.Parameters.AddWithValue("@Name", updateEmployeeDto.Name);
+                //command.Parameters.AddWithValue("@Department", updateEmployeeDto.Department);
+                command.Parameters.AddWithValue("@Name", (updateEmployeeDto.Name != null)? updateEmployeeDto.Name : DBNull.Value);
+                command.Parameters.AddWithValue("@Department", (updateEmployeeDto.Department != null)? updateEmployeeDto.Department: DBNull.Value);
+                
+                try
                 {
-                    // Create command
-                    SqlCommand command = new SqlCommand(updateQuery, connection);
+                    // Open connection
+                    connection.Open();
 
-                    // Add parameters
-                    command.Parameters.AddWithValue("@FId", updateEmployeeDto.FId);
-                    //command.Parameters.AddWithValue("@Name", updateEmployeeDto.Name);
-                    command.Parameters.AddWithValue("@Department", updateEmployeeDto.Department);
+                    // Execute the insert query
+                    int rowsAffected = command.ExecuteNonQuery();
 
-                    try
+                    // Check if rows were affected
+                    //Transactions
+                    if (rowsAffected > 0)
                     {
-                        // Open connection
-                        connection.Open();
-
-                        // Execute the insert query
-                        int rowsAffected = command.ExecuteNonQuery();
-
-                        // Check if rows were affected
-                        if (rowsAffected > 0)
-                        {
-                            result = "Successfully updated";
-                            Console.WriteLine($"Successfully Updated {rowsAffected} row(s).");
-                        }
-                        else
-                        {
-                            Console.WriteLine("No rows inserted.");
-                        }
+                        result = "Successfully updated";
+                        Console.WriteLine($"Successfully Updated {rowsAffected} row(s).");
+                        anything = true;
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Console.WriteLine($"Error: {ex.Message}");
-                    }
-                    //catch for record insered =0
-
-                    finally
-                    {
-                        // Close connection
-                        connection.Close();
+                        Console.WriteLine("No rows inserted.");
+                        anything = false;
                     }
                 }
-            }
-            else
-            {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                catch (Exception ex)
                 {
-                    string updateQuery = "UPDATE office_table SET Name=@Name,Department=@Department WHERE F_Id =@FId;";
-                    string result = "0";
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+                //catch for record insered =0
 
-                    // Create command
-                    SqlCommand command = new SqlCommand(updateQuery, connection);
-
-                    // Add parameters
-                    command.Parameters.AddWithValue("@FId", updateEmployeeDto.FId);
-                    command.Parameters.AddWithValue("@Name", updateEmployeeDto.Name);
-                    command.Parameters.AddWithValue("@Department", updateEmployeeDto.Department);
-
-                    try
-                    {
-                        // Open connection
-                        connection.Open();
-
-                        // Execute the insert query
-                        int rowsAffected = command.ExecuteNonQuery();
-
-                        // Check if rows were affected
-                        if (rowsAffected > 0)
-                        {
-                            result = "Successfully updated";
-                            Console.WriteLine($"Successfully Updated {rowsAffected} row(s).");
-                        }
-                        else
-                        {
-                            Console.WriteLine("No rows inserted.");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error: {ex.Message}");
-                    }
-                    //catch for record insered =0
-
-                    finally
-                    {
-                        // Close connection
-                        connection.Close();
-                    }
+                finally
+                {
+                    // Close connection
+                    connection.Close();
                 }
             }
-           
-
-            
-            return true;
+            return anything;
         }
-
-       
     }
 }
