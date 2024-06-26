@@ -25,12 +25,12 @@ namespace Testing_ConsoleAPP
         {
             //CreateEmployeeDto createEmployeeDto= SetEmployee();
             UpdateEmployeeDto updateEmployeeDto = SetUpdateEmployeeDto();
-           ;
             IOfficeRepository officeRepository = new OfficeRepository();
 
             officeRepository.GetAllEmployees();
 
-            officeRepository.UpdateEmployee(updateEmployeeDto);
+            bool ans = officeRepository.UpdateEmployee(updateEmployeeDto);
+            Console.WriteLine(ans);
             //officeRepository.CreateEmployee(createEmployeeDto);
 
             officeRepository.GetAllEmployees();
@@ -52,7 +52,7 @@ namespace Testing_ConsoleAPP
             {
                 FId = 106,
                 Name =null,
-                Department = "IT"
+                Department = "New Department"
             };
         }
 
